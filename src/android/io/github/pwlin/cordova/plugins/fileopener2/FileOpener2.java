@@ -67,21 +67,6 @@ public class FileOpener2 extends CordovaPlugin {
 			}
 			this._open(fileUrl, contentType, openWithDefault, callbackContext);
 		}
-		else if (action.equals("uninstall")) {
-			this._uninstall(args.getString(0), callbackContext);
-		}
-		else if (action.equals("appIsInstalled")) {
-			JSONObject successObj = new JSONObject();
-			if (this._appIsInstalled(args.getString(0))) {
-				successObj.put("status", PluginResult.Status.OK.ordinal());
-				successObj.put("message", "Installed");
-			}
-			else {
-				successObj.put("status", PluginResult.Status.NO_RESULT.ordinal());
-				successObj.put("message", "Not installed");
-			}
-			callbackContext.success(successObj);
-		}
 		else {
 			JSONObject errorObj = new JSONObject();
 			errorObj.put("status", PluginResult.Status.INVALID_ACTION.ordinal());
@@ -109,25 +94,13 @@ public class FileOpener2 extends CordovaPlugin {
 
 				Intent intent;
 				if (contentType.equals("application/vnd.android.package-archive")) {
-					// https://stackoverflow.com/questions/9637629/can-we-install-an-apk-from-a-contentprovider/9672282#9672282
-					intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
-					Uri path;
-					if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-						path = Uri.fromFile(file);
-					} else {
-						Context context = cordova.getActivity().getApplicationContext();
-						path = FileProvider.getUriForFile(context, cordova.getActivity().getPackageName() + ".fileOpener2.provider", file);
-					}
-					intent.setDataAndType(path, contentType);
-					intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-
+					throw new android.content.ActivityNotFoundException("APK files can't be opened with this plugin");
 				} else {
 					intent = new Intent(Intent.ACTION_VIEW);
 					Context context = cordova.getActivity().getApplicationContext();
 					Uri path = FileProvider.getUriForFile(context, cordova.getActivity().getPackageName() + ".fileOpener2.provider", file);
 					intent.setDataAndType(path, contentType);
 					intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-
 				}
 
 				/*
@@ -166,33 +139,6 @@ public class FileOpener2 extends CordovaPlugin {
 		}
 	    }
 	    return mimeType;
-	}
-
-	private void _uninstall(String packageId, CallbackContext callbackContext) throws JSONException {
-		if (this._appIsInstalled(packageId)) {
-			Intent intent = new Intent(Intent.ACTION_UNINSTALL_PACKAGE);
-			intent.setData(Uri.parse("package:" + packageId));
-			cordova.getActivity().startActivity(intent);
-			callbackContext.success();
-		}
-		else {
-			JSONObject errorObj = new JSONObject();
-			errorObj.put("status", PluginResult.Status.ERROR.ordinal());
-			errorObj.put("message", "This package is not installed");
-			callbackContext.error(errorObj);
-		}
-	}
-
-	private boolean _appIsInstalled(String packageId) {
-		PackageManager pm = cordova.getActivity().getPackageManager();
-        boolean appInstalled = false;
-        try {
-            pm.getPackageInfo(packageId, PackageManager.GET_ACTIVITIES);
-            appInstalled = true;
-        } catch (PackageManager.NameNotFoundException e) {
-            appInstalled = false;
-        }
-        return appInstalled;
 	}
 
 }
